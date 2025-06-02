@@ -2,6 +2,7 @@ package taxiapp.passengerpayment.config
 
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
+import org.springframework.amqp.core.DirectExchange
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.core.QueueBuilder
 import org.springframework.amqp.core.TopicExchange
@@ -13,6 +14,9 @@ import org.springframework.context.annotation.Configuration
 class MessagingConfig {
     @Value("\${rabbit.exchange.ride.name}")
     private val rideExchangeName: String? = null
+
+    @Value("\${rabbit.exchange.payment.name}")
+    private val paymentExchangeName: String? = null
 
     @Value("\${rabbit.queue.ppayment.name}")
     private val passengerPaymentQueueName: String? = null
@@ -28,8 +32,13 @@ class MessagingConfig {
 
 
     @Bean
-    fun exchange(): TopicExchange {
+    fun rideExchange(): TopicExchange {
         return TopicExchange("$rideExchangeName")
+    }
+
+    @Bean
+    fun paymentExchange(): DirectExchange {
+        return DirectExchange("$paymentExchangeName")
     }
 
     @Bean
@@ -43,8 +52,8 @@ class MessagingConfig {
     }
 
     @Bean
-    fun paymentStatusUpdatedBinding(exchange: TopicExchange, pPaymentQueue: Queue): Binding {
-        return BindingBuilder.bind(pPaymentQueue).to(exchange).with("$paymentStatusUpdated")
+    fun paymentStatusUpdatedBinding(paymentExchange: DirectExchange, pPaymentQueue: Queue): Binding {
+        return BindingBuilder.bind(pPaymentQueue).to(paymentExchange).with("$paymentStatusUpdated")
     }
 
     @Bean
