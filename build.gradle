@@ -32,7 +32,7 @@ dependencies {
 
     // Jackson
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
-    
+
     // Database
     runtimeOnly("org.postgresql:postgresql:42.7.2")
     runtimeOnly("com.h2database:h2")
