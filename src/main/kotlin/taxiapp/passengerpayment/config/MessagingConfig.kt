@@ -6,6 +6,7 @@ import org.springframework.amqp.core.DirectExchange
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.core.QueueBuilder
 import org.springframework.amqp.core.TopicExchange
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -32,8 +33,8 @@ class MessagingConfig {
 
 
     @Bean
-    fun rideExchange(): TopicExchange {
-        return TopicExchange("$rideExchangeName")
+    fun rideExchange(): DirectExchange {
+        return DirectExchange("$rideExchangeName")
     }
 
     @Bean
@@ -47,17 +48,17 @@ class MessagingConfig {
     }
 
     @Bean
-    fun pPaymentGenerateBinding(exchange: TopicExchange, pPaymentQueue: Queue): Binding {
+    fun pPaymentGenerateBinding(@Qualifier("rideExchange") exchange: DirectExchange, pPaymentQueue: Queue): Binding {
         return BindingBuilder.bind(pPaymentQueue).to(exchange).with("$generatePaymentTopic")
     }
 
     @Bean
-    fun paymentStatusUpdatedBinding(paymentExchange: DirectExchange, pPaymentQueue: Queue): Binding {
+    fun paymentStatusUpdatedBinding(@Qualifier("paymentExchange") paymentExchange: DirectExchange, pPaymentQueue: Queue): Binding {
         return BindingBuilder.bind(pPaymentQueue).to(paymentExchange).with("$paymentStatusUpdated")
     }
 
     @Bean
-    fun rideCanceledBinding(exchange: TopicExchange, pPaymentQueue: Queue): Binding {
+    fun rideCanceledBinding(@Qualifier("rideExchange") exchange: DirectExchange, pPaymentQueue: Queue): Binding {
         return BindingBuilder.bind(pPaymentQueue).to(exchange).with("$rideCanceled")
     }
 }
