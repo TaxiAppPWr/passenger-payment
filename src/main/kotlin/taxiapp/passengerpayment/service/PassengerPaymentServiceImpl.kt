@@ -51,6 +51,8 @@ class PassengerPaymentServiceImpl @Autowired constructor(
             .build()
             .toUri()
 
+        // TODO: Retrieve passenger personal data from AWS Cognito by paymentInfo.passengerUsername
+
         val request = PaymentLinkRequest(
             totalAmount = paymentInfo.amount.toString(),
             buyer = Buyer(
