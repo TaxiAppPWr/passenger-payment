@@ -26,13 +26,15 @@ class PaymentMessagesReceiver(
     }
 
     @RabbitHandler
-    fun receivePaymentStatusUpdatedEvent(event: PaymentStatusUpdatedEvent) {
+    fun receivePaymentStatusUpdatedEvent(event: PaymentStatusUpdatedEvent, channel: Channel, message: Message) {
         passengerPaymentService.updatePaymentStatus(event)
+        channel.basicAck(message.messageProperties.deliveryTag, false)
     }
 
     @RabbitHandler
-    fun rideCanceledEvent(event: CancelRideEvent) {
+    fun rideCanceledEvent(event: CancelRideEvent, channel: Channel, message: Message) {
         passengerPaymentService.refundPayment(event)
+        channel.basicAck(message.messageProperties.deliveryTag, false)
     }
 
     @RabbitHandler(isDefault = true)

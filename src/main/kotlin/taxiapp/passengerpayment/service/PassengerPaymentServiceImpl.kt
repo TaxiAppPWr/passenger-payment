@@ -1,12 +1,13 @@
 package taxiapp.passengerpayment.service
 
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.core.DirectExchange
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import taxiapp.passengerpayment.repository.PassengerPaymentRepository
-import org.springframework.amqp.core.TopicExchange
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
@@ -24,7 +25,7 @@ import taxiapp.passengerpayment.model.Status
 @Service
 class PassengerPaymentServiceImpl @Autowired constructor(
     private val passengerPaymentRepository: PassengerPaymentRepository,
-    private val exchange: TopicExchange,
+    @Qualifier("rideExchange") private val rideExchange: DirectExchange,
     private val template: RabbitTemplate,
     private val restTemplate: RestTemplate,
     @Value("\${service.address.payment}")
@@ -102,7 +103,7 @@ class PassengerPaymentServiceImpl @Autowired constructor(
                     status = payment.status.toString()
                 )
                 logger.info("Passenger payment status for ride: ${payment.rideId} updated to ${payment.status}. Event sent to event bus.")
-                template.convertAndSend(exchange.name, pPaymentStatusUpdatedTopic, event)
+                template.convertAndSend(rideExchange.name, pPaymentStatusUpdatedTopic, event)
             }
         }
     }
@@ -114,7 +115,7 @@ class PassengerPaymentServiceImpl @Autowired constructor(
         }
 
         if (payment.get().status != Status.COMPLETED) {
-            logger.info("Ride ${cancelRideEvent.rideId} has status ${payment.get().status}, not sending refund request to payment provider.")
+            logger.info("Ride ${cancelRideEvent.rideId}'s payment has status ${payment.get().status}, not sending refund request to payment provider.")
             return
         }
 
