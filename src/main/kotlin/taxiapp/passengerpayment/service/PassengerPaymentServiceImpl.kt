@@ -32,6 +32,8 @@ class PassengerPaymentServiceImpl @Autowired constructor(
     private val paymentServiceAddress: String,
     @Value("\${rabbit.topic.ppayment.status-updated}")
     private val pPaymentStatusUpdatedTopic: String
+    private val cognitoClient: CognitoIdentityProviderClient,
+    @Value("\${aws.cognito.user-pool-id}") private val userPoolId: String
 ) : PassengerPaymentService {
     private val logger = LoggerFactory.getLogger(PassengerPaymentService::class.java)
 
@@ -47,21 +49,25 @@ class PassengerPaymentServiceImpl @Autowired constructor(
 
 
     override fun createPayment(paymentInfo: GeneratePaymentEvent) {
-        val linkGenerationUri = UriComponentsBuilder
-            .fromUriString("$paymentServiceAddress/api/payu/payment")
+        val request = AdminGetUserRequest.builder()
+            .userPoolId(userPoolId)
+            .username(paymentInfo.passengerUsername)
             .build()
-            .toUri()
 
-        // TODO: Retrieve passenger personal data from AWS Cognito by paymentInfo.passengerUsername
+        val result = cognitoClient.adminGetUser(request)
+
+        val userAttributes = result.userAttributes().associate { it.name() to it.value() }
+
+        val buyer = Buyer(
+            email = userAttributes["email"] ?: "",
+            phone = userAttributes["phone_number"] ?: "",
+            firstName = userAttributes["given_name"] ?: "",
+            lastName = userAttributes["family_name"] ?: ""
+        )
 
         val request = PaymentLinkRequest(
             totalAmount = paymentInfo.amount.toString(),
-            buyer = Buyer(
-                email = paymentInfo.email,
-                phone =  paymentInfo.phoneNumber,
-                firstName = paymentInfo.firstname,
-                lastName = paymentInfo.lastname
-            )
+            buyer = buyer
         )
 
         val response = restTemplate.postForEntity(linkGenerationUri, request, PaymentLinkResponse::class.java)
