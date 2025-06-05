@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.ResponseEntity
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest
 import taxiapp.passengerpayment.dto.event.CancelRideEvent
 import taxiapp.passengerpayment.dto.response.PaymentLinkResponse
 import taxiapp.passengerpayment.dto.event.PaymentStatusUpdatedEvent
@@ -31,7 +33,7 @@ class PassengerPaymentServiceImpl @Autowired constructor(
     @Value("\${service.address.payment}")
     private val paymentServiceAddress: String,
     @Value("\${rabbit.topic.ppayment.status-updated}")
-    private val pPaymentStatusUpdatedTopic: String
+    private val pPaymentStatusUpdatedTopic: String,
     private val cognitoClient: CognitoIdentityProviderClient,
     @Value("\${aws.cognito.user-pool-id}") private val userPoolId: String
 ) : PassengerPaymentService {
@@ -49,12 +51,12 @@ class PassengerPaymentServiceImpl @Autowired constructor(
 
 
     override fun createPayment(paymentInfo: GeneratePaymentEvent) {
-        val request = AdminGetUserRequest.builder()
+        val userRequest = AdminGetUserRequest.builder()
             .userPoolId(userPoolId)
             .username(paymentInfo.passengerUsername)
             .build()
 
-        val result = cognitoClient.adminGetUser(request)
+        val result = cognitoClient.adminGetUser(userRequest)
 
         val userAttributes = result.userAttributes().associate { it.name() to it.value() }
 
@@ -64,6 +66,11 @@ class PassengerPaymentServiceImpl @Autowired constructor(
             firstName = userAttributes["given_name"] ?: "",
             lastName = userAttributes["family_name"] ?: ""
         )
+
+        val linkGenerationUri = UriComponentsBuilder
+            .fromUriString("$paymentServiceAddress/api/payu/payment")
+            .build()
+            .toUri()
 
         val request = PaymentLinkRequest(
             totalAmount = paymentInfo.amount.toString(),
