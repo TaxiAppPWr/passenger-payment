@@ -15,4 +15,12 @@ class PassengerPaymentController @Autowired constructor(
     fun getPaymentLink(@RequestParam rideId: Long): ResponseEntity<Any> {
         return ResponseEntity.ok(driversService.getPaymentLink(rideId))
     }
+
+    @GetMapping("health")
+    fun health(): ResponseEntity<Map<String, String>> {
+        return ResponseEntity.ok(mapOf(
+            "status" to "UP",
+            "service" to "payment-service"
+        ))
+    }
 }
